@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#245C45</color>
+    <color name="secondary_sage">#DCE9DF</color>
+    <color name="background">#F7F7F2</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="text_primary">#202822</color>
+    <color name="text_secondary">#5F6B62</color>
+    <color name="status_approaching">#8A5700</color>
+    <color name="status_urgent">#B42318</color>
+</resources>
