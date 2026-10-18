@@ -1,4 +1,4 @@
-package com.bantaypetsa.app.core.designsystem.theme
+﻿package com.bantaypetsa.app.core.designsystem.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -8,45 +8,47 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-    primary = ForestGreen,
+    primary = PrimaryGreen,
     onPrimary = Color.White,
-    primaryContainer = SageSecondary,
-    onPrimaryContainer = ForestGreenDark,
-    secondary = ForestGreenLight,
+    primaryContainer = PaleGreen,
+    onPrimaryContainer = CharcoalGreen,
+    secondary = MutedGreen,
     onSecondary = Color.White,
-    secondaryContainer = SageContainer,
-    onSecondaryContainer = ForestGreenDark,
-    background = BackgroundCream,
-    onBackground = TextPrimary,
+    secondaryContainer = PaleGreen,
+    onSecondaryContainer = CharcoalGreen,
+    background = SoftWhite,
+    onBackground = CharcoalGreen,
     surface = SurfaceWhite,
-    onSurface = TextPrimary,
-    surfaceVariant = SurfaceVariant,
-    onSurfaceVariant = TextSecondary,
-    error = StatusUrgent,
+    onSurface = CharcoalGreen,
+    surfaceVariant = PaleGreen,
+    onSurfaceVariant = CharcoalGreen.copy(alpha = 0.7f),
+    outline = BorderSubtle,
+    error = ExpenseRed,
     onError = Color.White,
-    errorContainer = StatusUrgentContainer,
-    onErrorContainer = StatusUrgent
+    errorContainer = ExpenseRedContainer,
+    onErrorContainer = ExpenseRed
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = ForestGreenLight,
+    primary = PrimaryGreen,
     onPrimary = Color.White,
-    primaryContainer = ForestGreenDark,
-    onPrimaryContainer = SageSecondary,
-    secondary = SageSecondary,
-    onSecondary = ForestGreenDark,
-    secondaryContainer = ForestGreenDark,
-    onSecondaryContainer = SageSecondary,
-    background = Color(0xFF141915),
-    onBackground = Color(0xFFE5EAE6),
-    surface = Color(0xFF1B221D),
-    onSurface = Color(0xFFE5EAE6),
-    surfaceVariant = Color(0xFF252E28),
-    onSurfaceVariant = Color(0xFFB5C1B8),
-    error = Color(0xFFF97066),
-    onError = Color(0xFF55100B),
-    errorContainer = Color(0xFF7A1D1A),
-    onErrorContainer = Color(0xFFFEE4E2)
+    primaryContainer = Color(0xFF1E2D23),
+    onPrimaryContainer = PaleGreen,
+    secondary = MutedGreen,
+    onSecondary = CharcoalGreen,
+    secondaryContainer = Color(0xFF1E2D23),
+    onSecondaryContainer = PaleGreen,
+    background = Color(0xFF0F1411),
+    onBackground = SoftWhite,
+    surface = Color(0xFF19211D),
+    onSurface = SoftWhite,
+    surfaceVariant = Color(0xFF222B26),
+    onSurfaceVariant = MutedGreen,
+    outline = Color(0xFF334038),
+    error = ExpenseRed,
+    onError = Color.White,
+    errorContainer = ExpenseRedContainer,
+    onErrorContainer = ExpenseRed
 )
 
 @Composable
