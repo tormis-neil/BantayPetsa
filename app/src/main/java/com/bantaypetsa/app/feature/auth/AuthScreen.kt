@@ -24,11 +24,14 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -49,6 +52,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,6 +80,7 @@ fun AuthScreen(
     // Sign In Fields (Prefilled with sample data for instant zero-friction login)
     var signInEmail by remember { mutableStateOf("nena.santos@gmail.com") }
     var signInPin by remember { mutableStateOf("1234") }
+    var isSignInPasswordVisible by remember { mutableStateOf(false) }
 
     // Sign Up Fields
     var signUpStoreName by remember { mutableStateOf("Aling Nena's Sari-Sari Store") }
@@ -83,6 +88,7 @@ fun AuthScreen(
     var signUpPhone by remember { mutableStateOf("09171234567") }
     var signUpCategory by remember { mutableStateOf("Sari-Sari Store / Micro-Retail") }
     var signUpPin by remember { mutableStateOf("1234") }
+    var isSignUpPasswordVisible by remember { mutableStateOf(false) }
 
     var phoneError by remember { mutableStateOf<String?>(null) }
     var pinError by remember { mutableStateOf<String?>(null) }
@@ -234,7 +240,18 @@ fun AuthScreen(
                         leadingIcon = {
                             Icon(Icons.Default.Lock, contentDescription = null, tint = PrimaryGreen)
                         },
-                        visualTransformation = PasswordVisualTransformation(),
+                        trailingIcon = {
+                            val icon = if (isSignInPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                            val description = if (isSignInPasswordVisible) "Hide password" else "Show password"
+                            IconButton(onClick = { isSignInPasswordVisible = !isSignInPasswordVisible }) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = description,
+                                    tint = MutedGreen
+                                )
+                            }
+                        },
+                        visualTransformation = if (isSignInPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         colors = bantayTextFieldColors(),
                         singleLine = true,
@@ -369,7 +386,18 @@ fun AuthScreen(
                         leadingIcon = {
                             Icon(Icons.Default.Lock, contentDescription = null, tint = PrimaryGreen)
                         },
-                        visualTransformation = PasswordVisualTransformation(),
+                        trailingIcon = {
+                            val icon = if (isSignUpPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                            val description = if (isSignUpPasswordVisible) "Hide PIN" else "Show PIN"
+                            IconButton(onClick = { isSignUpPasswordVisible = !isSignUpPasswordVisible }) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = description,
+                                    tint = MutedGreen
+                                )
+                            }
+                        },
+                        visualTransformation = if (isSignUpPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         isError = pinError != null,
                         supportingText = {
