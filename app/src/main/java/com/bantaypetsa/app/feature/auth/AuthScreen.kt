@@ -2,10 +2,6 @@
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.material3.Surface
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.res.painterResource
-import com.bantaypetsa.app.R
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -28,7 +23,6 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,21 +43,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bantaypetsa.app.R
+import com.bantaypetsa.app.core.designsystem.component.bantayTextFieldColors
 import com.bantaypetsa.app.core.designsystem.theme.BorderSubtle
 import com.bantaypetsa.app.core.designsystem.theme.CharcoalGreen
+import com.bantaypetsa.app.core.designsystem.theme.ExpenseRed
 import com.bantaypetsa.app.core.designsystem.theme.MutedGreen
 import com.bantaypetsa.app.core.designsystem.theme.PaleGreen
 import com.bantaypetsa.app.core.designsystem.theme.PrimaryGreen
 import com.bantaypetsa.app.core.designsystem.theme.SoftWhite
 import com.bantaypetsa.app.core.designsystem.theme.SurfaceWhite
 import com.bantaypetsa.app.core.util.SampleInventoryState
+import com.bantaypetsa.app.domain.engine.DomainValidators
 
 @Composable
 fun AuthScreen(
@@ -79,9 +80,14 @@ fun AuthScreen(
     // Sign Up Fields
     var signUpStoreName by remember { mutableStateOf("Aling Nena's Sari-Sari Store") }
     var signUpOwnerName by remember { mutableStateOf("Maria Santos") }
-    var signUpPhone by remember { mutableStateOf("+63 917 123 4567") }
+    var signUpPhone by remember { mutableStateOf("09171234567") }
     var signUpCategory by remember { mutableStateOf("Sari-Sari Store / Micro-Retail") }
     var signUpPin by remember { mutableStateOf("1234") }
+
+    var phoneError by remember { mutableStateOf<String?>(null) }
+    var pinError by remember { mutableStateOf<String?>(null) }
+    var storeNameError by remember { mutableStateOf<String?>(null) }
+    var ownerNameError by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = modifier
@@ -122,29 +128,26 @@ fun AuthScreen(
         ) {
             Text(
                 text = "BantayPetsa",
-                style = MaterialTheme.typography.headlineLarge,
-                fontSize = 32.sp,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold,
-                letterSpacing = (-0.5).sp,
+                fontSize = 28.sp,
                 color = CharcoalGreen
             )
             Text(
                 text = "Retail Inventory Assistant",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MutedGreen
+                color = PrimaryGreen
             )
             Text(
                 text = "Bantay sa petsa. Alaga sa paninda.",
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Medium,
-                color = PrimaryGreen
+                color = PrimaryGreen.copy(alpha = 0.8f)
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Auth Mode Switcher Tab
+        // Tab Switcher (Sign In vs Create Store Account)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -158,7 +161,7 @@ fun AuthScreen(
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (selectedTab == 0) PrimaryGreen else Color.Transparent)
                     .clickable { selectedTab = 0 }
-                    .padding(vertical = 10.dp),
+                    .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -171,11 +174,11 @@ fun AuthScreen(
 
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(1.3f)
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (selectedTab == 1) PrimaryGreen else Color.Transparent)
                     .clickable { selectedTab = 1 }
-                    .padding(vertical = 10.dp),
+                    .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -187,11 +190,11 @@ fun AuthScreen(
             }
         }
 
-        // Form Card
+        // Main Card Form
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .border(1.dp, BorderSubtle, RoundedCornerShape(20.dp))
@@ -216,6 +219,7 @@ fun AuthScreen(
                         leadingIcon = {
                             Icon(Icons.Default.Email, contentDescription = null, tint = PrimaryGreen)
                         },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -223,13 +227,16 @@ fun AuthScreen(
 
                     OutlinedTextField(
                         value = signInPin,
-                        onValueChange = { signInPin = it },
+                        onValueChange = { input ->
+                            signInPin = input.filter { it.isDigit() }.take(6)
+                        },
                         label = { Text("Security PIN or Password") },
                         leadingIcon = {
                             Icon(Icons.Default.Lock, contentDescription = null, tint = PrimaryGreen)
                         },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -278,11 +285,17 @@ fun AuthScreen(
 
                     OutlinedTextField(
                         value = signUpStoreName,
-                        onValueChange = { signUpStoreName = it },
+                        onValueChange = {
+                            signUpStoreName = it
+                            storeNameError = null
+                        },
                         label = { Text("Store / Business Name *") },
                         leadingIcon = {
                             Icon(Icons.Default.Store, contentDescription = null, tint = PrimaryGreen)
                         },
+                        isError = storeNameError != null,
+                        supportingText = storeNameError?.let { { Text(it, color = ExpenseRed) } },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -290,11 +303,17 @@ fun AuthScreen(
 
                     OutlinedTextField(
                         value = signUpOwnerName,
-                        onValueChange = { signUpOwnerName = it },
+                        onValueChange = {
+                            signUpOwnerName = it
+                            ownerNameError = null
+                        },
                         label = { Text("Owner Full Name *") },
                         leadingIcon = {
                             Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryGreen)
                         },
+                        isError = ownerNameError != null,
+                        supportingText = ownerNameError?.let { { Text(it, color = ExpenseRed) } },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -302,12 +321,27 @@ fun AuthScreen(
 
                     OutlinedTextField(
                         value = signUpPhone,
-                        onValueChange = { signUpPhone = it },
+                        onValueChange = { input ->
+                            // Strictly allow only numbers and maximum 11 digits
+                            val digitsOnly = input.filter { it.isDigit() }.take(11)
+                            signUpPhone = digitsOnly
+                            phoneError = null
+                        },
                         label = { Text("Contact Phone *") },
+                        placeholder = { Text("09XX XXX XXXX") },
                         leadingIcon = {
                             Icon(Icons.Default.Phone, contentDescription = null, tint = PrimaryGreen)
                         },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = phoneError != null,
+                        supportingText = {
+                            if (phoneError != null) {
+                                Text(phoneError!!, color = ExpenseRed)
+                            } else {
+                                Text("${signUpPhone.length}/11 digits (e.g. 09171234567)", color = MutedGreen)
+                            }
+                        },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -318,6 +352,7 @@ fun AuthScreen(
                         onValueChange = { signUpCategory = it },
                         label = { Text("Retail Business Type *") },
                         placeholder = { Text("e.g. Sari-Sari Store, Minimart, Kiosk") },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -325,13 +360,26 @@ fun AuthScreen(
 
                     OutlinedTextField(
                         value = signUpPin,
-                        onValueChange = { signUpPin = it },
+                        onValueChange = { input ->
+                            // 4-digit PIN only
+                            signUpPin = input.filter { it.isDigit() }.take(4)
+                            pinError = null
+                        },
                         label = { Text("Create 4-Digit PIN *") },
                         leadingIcon = {
                             Icon(Icons.Default.Lock, contentDescription = null, tint = PrimaryGreen)
                         },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        isError = pinError != null,
+                        supportingText = {
+                            if (pinError != null) {
+                                Text(pinError!!, color = ExpenseRed)
+                            } else {
+                                Text("${signUpPin.length}/4 digits", color = MutedGreen)
+                            }
+                        },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -341,11 +389,33 @@ fun AuthScreen(
 
                     Button(
                         onClick = {
+                            // Validation
+                            var hasError = false
+                            if (signUpStoreName.trim().isEmpty()) {
+                                storeNameError = "Store name is required."
+                                hasError = true
+                            }
+                            if (signUpOwnerName.trim().isEmpty()) {
+                                ownerNameError = "Owner name is required."
+                                hasError = true
+                            }
+                            val phoneValidation = DomainValidators.validatePhoneNumber(signUpPhone)
+                            if (phoneValidation is DomainValidators.ValidationResult.Invalid) {
+                                phoneError = phoneValidation.firstErrorMessage
+                                hasError = true
+                            }
+                            if (signUpPin.length < 4) {
+                                pinError = "PIN must be exactly 4 digits."
+                                hasError = true
+                            }
+
+                            if (hasError) return@Button
+
                             SampleInventoryState.updateUserProfile(
-                                storeName = signUpStoreName.trim().ifEmpty { "My Sari-Sari Store" },
-                                ownerName = signUpOwnerName.trim().ifEmpty { "Store Owner" },
+                                storeName = signUpStoreName.trim(),
+                                ownerName = signUpOwnerName.trim(),
                                 email = "owner@bantaypetsa.ph",
-                                phone = signUpPhone.trim().ifEmpty { "+63 900 000 0000" },
+                                phone = signUpPhone.trim(),
                                 businessType = signUpCategory.trim().ifEmpty { "Sari-Sari Store" },
                                 location = "Philippines"
                             )

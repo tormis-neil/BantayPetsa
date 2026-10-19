@@ -1,7 +1,6 @@
 ﻿package com.bantaypetsa.app.feature.batches
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -47,26 +45,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bantaypetsa.app.core.designsystem.component.EmptyStateView
+import com.bantaypetsa.app.core.designsystem.component.bantayTextFieldColors
 import com.bantaypetsa.app.core.designsystem.theme.BorderSubtle
 import com.bantaypetsa.app.core.designsystem.theme.CategoryBlue
 import com.bantaypetsa.app.core.designsystem.theme.CharcoalGreen
 import com.bantaypetsa.app.core.designsystem.theme.ExpenseRed
 import com.bantaypetsa.app.core.designsystem.theme.ExpenseRedContainer
+import com.bantaypetsa.app.core.designsystem.theme.MutedGreen
 import com.bantaypetsa.app.core.designsystem.theme.PaleGreen
 import com.bantaypetsa.app.core.designsystem.theme.PrimaryGreen
 import com.bantaypetsa.app.core.designsystem.theme.SoftWhite
 import com.bantaypetsa.app.core.designsystem.theme.SuccessGreen
-import com.bantaypetsa.app.core.designsystem.theme.SurfaceWhite
 import com.bantaypetsa.app.core.util.SampleInventoryState
 import com.bantaypetsa.app.domain.model.StockActionType
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,49 +72,25 @@ fun RecordStockActionScreen(
     modifier: Modifier = Modifier
 ) {
     val batches by SampleInventoryState.batches.collectAsState()
-    val batch = remember(batchId, batches) { batches.find { it.batchId == batchId } }
-
     val products by SampleInventoryState.products.collectAsState()
-    val product = remember(batch, products) {
-        batch?.let { b -> products.find { it.productId == b.productId } }
-    }
+
+    val batch = batches.find { it.batchId == batchId }
+    val product = products.find { it.productId == batch?.productId }
 
     if (batch == null || product == null) {
-        Scaffold(
-            containerColor = SoftWhite,
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = "Stock Action",
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(
-                            onClick = onNavigateBack,
-                            modifier = Modifier
-                                .padding(start = 12.dp)
-                                .size(40.dp)
-                                
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = PrimaryGreen
-                            )
-                        }
-                    }
-                )
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(SoftWhite)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Batch or product not found.", color = ExpenseRed)
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedButton(onClick = onNavigateBack) {
+                Text("Return", color = CharcoalGreen)
             }
-        ) { padding ->
-            EmptyStateView(
-                title = "Batch Not Found",
-                message = "The requested batch details could not be found.",
-                actionLabel = "Go Back",
-                onActionClick = onNavigateBack,
-                modifier = Modifier.padding(padding)
-            )
         }
         return
     }
@@ -128,14 +100,13 @@ fun RecordStockActionScreen(
     var reason by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
 
-    val parsedInput = quantityInput.toDoubleOrNull() ?: 0.0
-    val beforeQty = batch.quantity
+    // Live calculation
+    val parsedQty = quantityInput.toDoubleOrNull() ?: 0.0
     val afterQty = when (selectedActionType) {
-        StockActionType.ADD -> beforeQty + parsedInput
-        StockActionType.REMOVE -> beforeQty - parsedInput
-        StockActionType.ADJUST -> parsedInput
+        StockActionType.ADD -> batch.quantity + parsedQty
+        StockActionType.REMOVE -> batch.quantity - parsedQty
+        StockActionType.ADJUST -> parsedQty
     }
-
     val isNegative = afterQty < 0.0
 
     Scaffold(
@@ -145,7 +116,7 @@ fun RecordStockActionScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "Record Stock Action",
+                            text = "Record Stock Movement",
                             fontWeight = FontWeight.Bold,
                             color = CharcoalGreen,
                             modifier = Modifier.padding(start = 8.dp)
@@ -157,7 +128,6 @@ fun RecordStockActionScreen(
                             modifier = Modifier
                                 .padding(start = 12.dp)
                                 .size(40.dp)
-                                
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -183,17 +153,14 @@ fun RecordStockActionScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Target batch summary card
+            // Batch Context Info Card
             Card(
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, BorderSubtle, RoundedCornerShape(16.dp))
+                colors = CardDefaults.cardColors(containerColor = PaleGreen),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    modifier = Modifier.padding(14.dp),
+                    modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
@@ -203,27 +170,26 @@ fun RecordStockActionScreen(
                         color = CharcoalGreen
                     )
                     Text(
-                        text = "Current Batch Stock: ${if (beforeQty % 1.0 == 0.0) beforeQty.toInt() else beforeQty} ${product.unit}",
+                        text = "Current Stock: ${if (batch.quantity % 1.0 == 0.0) batch.quantity.toInt() else batch.quantity} ${product.unit}  â€¢  Lot: ${batch.lotNumber.ifBlank { "N/A" }}",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = PrimaryGreen
+                        color = CharcoalGreen.copy(alpha = 0.8f)
                     )
                     Text(
-                        text = "Expires on: ${batch.expirationDate.format(DateTimeFormatter.ofPattern("MMM dd, yyyy"))}",
+                        text = "Expires: ${batch.expirationDate}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = CharcoalGreen.copy(alpha = 0.7f)
+                        color = MutedGreen
                     )
                 }
             }
 
             Text(
                 text = "Select Action Type",
-                style = MaterialTheme.typography.titleLarge,
-                fontSize = 20.sp,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = CharcoalGreen
             )
 
+            // Action Selection Tabs
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -297,6 +263,7 @@ fun RecordStockActionScreen(
                         else -> null
                     }
                 },
+                colors = bantayTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -345,6 +312,7 @@ fun RecordStockActionScreen(
                         }
                     )
                 },
+                colors = bantayTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -394,7 +362,6 @@ fun RecordStockActionScreen(
                             validationError = "Unable to record action due to negative inventory constraint"
                         }
                     },
-
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier

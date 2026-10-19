@@ -1,4 +1,4 @@
-package com.bantaypetsa.app.feature.profile
+﻿package com.bantaypetsa.app.feature.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,11 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
@@ -27,8 +27,8 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,22 +53,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bantaypetsa.app.core.designsystem.component.ConfirmationDialog
+import com.bantaypetsa.app.core.designsystem.component.bantayTextFieldColors
 import com.bantaypetsa.app.core.designsystem.theme.BorderSubtle
 import com.bantaypetsa.app.core.designsystem.theme.CharcoalGreen
 import com.bantaypetsa.app.core.designsystem.theme.ExpenseRed
-import com.bantaypetsa.app.core.designsystem.theme.ExpenseRedContainer
 import com.bantaypetsa.app.core.designsystem.theme.MutedGreen
 import com.bantaypetsa.app.core.designsystem.theme.PaleGreen
 import com.bantaypetsa.app.core.designsystem.theme.PrimaryGreen
 import com.bantaypetsa.app.core.designsystem.theme.SoftWhite
-import com.bantaypetsa.app.core.designsystem.theme.SuccessGreen
-import com.bantaypetsa.app.core.designsystem.theme.SuccessGreenContainer
 import com.bantaypetsa.app.core.designsystem.theme.SurfaceWhite
+import com.bantaypetsa.app.domain.engine.DomainValidators
 
 @Composable
 fun ProfileScreen(
@@ -83,232 +84,198 @@ fun ProfileScreen(
     var showResetDialog by remember { mutableStateOf(false) }
     var showSignOutDialog by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(SoftWhite)
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Screen Header
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = "Profile",
-                style = MaterialTheme.typography.headlineLarge,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = (-0.5).sp,
-                color = CharcoalGreen
-            )
-            Text(
-                text = "Store owner identity and account settings.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = CharcoalGreen.copy(alpha = 0.7f)
-            )
-        }
-
-        // 1. Identity Banner Card
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, BorderSubtle, RoundedCornerShape(20.dp))
+    Scaffold(
+        containerColor = SoftWhite
+    ) { paddingValues ->
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(SoftWhite)
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // Initials Avatar
-                Box(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(PaleGreen),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val initials = userProfile.ownerName
-                        .split(" ")
-                        .mapNotNull { it.firstOrNull()?.toString() }
-                        .take(2)
-                        .joinToString("")
-                        .ifEmpty { "SO" }
-
-                    Text(
-                        text = initials,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 20.sp,
-                        color = PrimaryGreen
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = userProfile.ownerName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = CharcoalGreen
-                    )
-                    Text(
-                        text = userProfile.storeName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MutedGreen
-                    )
-
-                    // Status Badge
-                    if (userProfile.isArchived) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(ExpenseRedContainer)
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "Archived Account",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = ExpenseRed
-                            )
-                        }
-                    } else {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(SuccessGreenContainer)
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SuccessGreen, modifier = Modifier.size(12.dp))
-                            Text(
-                                text = "Active Store Owner",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SuccessGreen
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. Detailed Store Information Card (View Mode)
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, BorderSubtle, RoundedCornerShape(20.dp))
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Store Details",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = CharcoalGreen
-                    )
-
-                    OutlinedButton(
-                        onClick = { showEditDialog = true },
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = null, tint = PrimaryGreen, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.size(4.dp))
-                        Text("Edit", color = PrimaryGreen, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                    }
-                }
-
-                HorizontalDivider(thickness = 0.8.dp, color = BorderSubtle)
-
-                ProfileInfoRow(icon = Icons.Default.Store, label = "Store Name", value = userProfile.storeName)
-                ProfileInfoRow(icon = Icons.Default.Person, label = "Owner Full Name", value = userProfile.ownerName)
-                ProfileInfoRow(icon = Icons.Default.Business, label = "Business Category", value = userProfile.businessType)
-                ProfileInfoRow(icon = Icons.Default.Email, label = "Email Address", value = userProfile.email)
-                ProfileInfoRow(icon = Icons.Default.Phone, label = "Contact Phone", value = userProfile.phone)
-                ProfileInfoRow(icon = Icons.Default.LocationOn, label = "Store Location", value = userProfile.location)
-                ProfileInfoRow(icon = Icons.Default.CheckCircle, label = "Member Since", value = userProfile.memberSince)
-            }
-        }
-
-        // 3. Account Actions Card (Archive, Reset, Sign Out)
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, BorderSubtle, RoundedCornerShape(20.dp))
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "Account Management",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    text = "Store Profile",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-0.5).sp,
                     color = CharcoalGreen
                 )
+                Text(
+                    text = "Manage your store identity and owner credentials.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = CharcoalGreen.copy(alpha = 0.7f)
+                )
+            }
 
-                // Archive / Restore Account
-                OutlinedButton(
-                    onClick = { showArchiveDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
+            // Profile Header Card
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, BorderSubtle, RoundedCornerShape(20.dp))
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(
-                        imageVector = if (userProfile.isArchived) Icons.Default.Restore else Icons.Default.Archive,
-                        contentDescription = null,
-                        tint = if (userProfile.isArchived) PrimaryGreen else CharcoalGreen,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.size(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(CircleShape)
+                            .background(PaleGreen),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Store,
+                            contentDescription = null,
+                            tint = PrimaryGreen,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = userProfile.storeName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = CharcoalGreen
+                        )
+                        Text(
+                            text = userProfile.businessType,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MutedGreen
+                        )
+                        if (userProfile.isArchived) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "STORE ACCOUNT ARCHIVED",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = ExpenseRed,
+                                modifier = Modifier
+                                    .background(PaleGreen, RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = { showEditDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(46.dp)
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text("Edit Store Profile", fontWeight = FontWeight.SemiBold, color = Color.White)
+                    }
+                }
+            }
+
+            // Profile Details Card
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, BorderSubtle, RoundedCornerShape(20.dp))
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
                     Text(
-                        text = if (userProfile.isArchived) "Restore Store Account" else "Archive Store Account",
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (userProfile.isArchived) PrimaryGreen else CharcoalGreen
+                        text = "Owner & Store Info",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = CharcoalGreen
                     )
+
+                    ProfileInfoRow(icon = Icons.Default.Person, label = "Store Owner", value = userProfile.ownerName)
+                    HorizontalDivider(thickness = 0.5.dp, color = BorderSubtle)
+                    ProfileInfoRow(icon = Icons.Default.Phone, label = "Contact Phone", value = userProfile.phone)
+                    HorizontalDivider(thickness = 0.5.dp, color = BorderSubtle)
+                    ProfileInfoRow(icon = Icons.Default.Email, label = "Email Address", value = userProfile.email)
+                    HorizontalDivider(thickness = 0.5.dp, color = BorderSubtle)
+                    ProfileInfoRow(icon = Icons.Default.LocationOn, label = "Location", value = userProfile.location)
+                    HorizontalDivider(thickness = 0.5.dp, color = BorderSubtle)
+                    ProfileInfoRow(icon = Icons.Default.Business, label = "Store Category", value = userProfile.businessType)
                 }
+            }
 
-                // Reset Account Data
-                OutlinedButton(
-                    onClick = { showResetDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
+            // Account Actions Card
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, BorderSubtle, RoundedCornerShape(20.dp))
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(Icons.Default.DeleteForever, contentDescription = null, tint = ExpenseRed, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text("Reset Profile to Sample Defaults", fontWeight = FontWeight.SemiBold, color = ExpenseRed)
-                }
+                    Text(
+                        text = "Store Maintenance Actions",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = CharcoalGreen
+                    )
 
-                HorizontalDivider(thickness = 0.8.dp, color = BorderSubtle)
+                    // Archive / Restore
+                    OutlinedButton(
+                        onClick = { showArchiveDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (userProfile.isArchived) Icons.Default.Unarchive else Icons.Default.Archive,
+                            contentDescription = null,
+                            tint = PrimaryGreen,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text(
+                            text = if (userProfile.isArchived) "Restore Store Account" else "Archive Store Account",
+                            fontWeight = FontWeight.SemiBold,
+                            color = CharcoalGreen
+                        )
+                    }
 
-                // Sign Out
-                Button(
-                    onClick = { showSignOutDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = ExpenseRed),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
-                ) {
-                    Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text("Sign Out", fontWeight = FontWeight.Bold, color = Color.White)
+                    // Reset Profile
+                    OutlinedButton(
+                        onClick = { showResetDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    ) {
+                        Icon(Icons.Default.DeleteForever, contentDescription = null, tint = ExpenseRed, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text("Reset Profile to Sample Defaults", fontWeight = FontWeight.SemiBold, color = ExpenseRed)
+                    }
+
+                    HorizontalDivider(thickness = 0.8.dp, color = BorderSubtle)
+
+                    // Sign Out
+                    Button(
+                        onClick = { showSignOutDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = ExpenseRed),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    ) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text("Sign Out", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
                 }
             }
         }
@@ -316,12 +283,13 @@ fun ProfileScreen(
 
     // Edit Profile Dialog
     if (showEditDialog) {
-        var editStoreName by remember { mutableStateOf(userProfile.storeName) }
-        var editOwnerName by remember { mutableStateOf(userProfile.ownerName) }
-        var editBusinessType by remember { mutableStateOf(userProfile.businessType) }
-        var editEmail by remember { mutableStateOf(userProfile.email) }
-        var editPhone by remember { mutableStateOf(userProfile.phone) }
-        var editLocation by remember { mutableStateOf(userProfile.location) }
+        var editStoreName by remember(userProfile) { mutableStateOf(userProfile.storeName) }
+        var editOwnerName by remember(userProfile) { mutableStateOf(userProfile.ownerName) }
+        var editBusinessType by remember(userProfile) { mutableStateOf(userProfile.businessType) }
+        var editEmail by remember(userProfile) { mutableStateOf(userProfile.email) }
+        var editPhone by remember(userProfile) { mutableStateOf(userProfile.phone.filter { it.isDigit() }.take(11)) }
+        var editLocation by remember(userProfile) { mutableStateOf(userProfile.location) }
+        var editPhoneError by remember { mutableStateOf<String?>(null) }
 
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
@@ -341,6 +309,7 @@ fun ProfileScreen(
                         value = editStoreName,
                         onValueChange = { editStoreName = it },
                         label = { Text("Store Name") },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -348,6 +317,7 @@ fun ProfileScreen(
                         value = editOwnerName,
                         onValueChange = { editOwnerName = it },
                         label = { Text("Owner Full Name") },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -355,6 +325,7 @@ fun ProfileScreen(
                         value = editBusinessType,
                         onValueChange = { editBusinessType = it },
                         label = { Text("Business Category") },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -362,13 +333,29 @@ fun ProfileScreen(
                         value = editEmail,
                         onValueChange = { editEmail = it },
                         label = { Text("Email Address") },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = editPhone,
-                        onValueChange = { editPhone = it },
+                        onValueChange = { input ->
+                            // Digits only, max 11 numbers
+                            editPhone = input.filter { it.isDigit() }.take(11)
+                            editPhoneError = null
+                        },
                         label = { Text("Contact Phone") },
+                        placeholder = { Text("09XX XXX XXXX") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = editPhoneError != null,
+                        supportingText = {
+                            if (editPhoneError != null) {
+                                Text(editPhoneError!!, color = ExpenseRed)
+                            } else {
+                                Text("${editPhone.length}/11 digits", color = MutedGreen)
+                            }
+                        },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -376,6 +363,7 @@ fun ProfileScreen(
                         value = editLocation,
                         onValueChange = { editLocation = it },
                         label = { Text("Location") },
+                        colors = bantayTextFieldColors(),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -384,6 +372,12 @@ fun ProfileScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        val phoneVal = DomainValidators.validatePhoneNumber(editPhone)
+                        if (phoneVal is DomainValidators.ValidationResult.Invalid) {
+                            editPhoneError = phoneVal.firstErrorMessage
+                            return@Button
+                        }
+
                         viewModel.updateUserProfile(
                             storeName = editStoreName.trim(),
                             ownerName = editOwnerName.trim(),

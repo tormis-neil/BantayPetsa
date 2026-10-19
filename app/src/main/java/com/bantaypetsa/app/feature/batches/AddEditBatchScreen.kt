@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -38,15 +37,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.bantaypetsa.app.core.designsystem.component.DatePickerField
+import com.bantaypetsa.app.core.designsystem.component.bantayTextFieldColors
 import com.bantaypetsa.app.core.designsystem.theme.BorderSubtle
 import com.bantaypetsa.app.core.designsystem.theme.CharcoalGreen
-import com.bantaypetsa.app.core.designsystem.theme.PaleGreen
+import com.bantaypetsa.app.core.designsystem.theme.ExpenseRed
+import com.bantaypetsa.app.core.designsystem.theme.MutedGreen
 import com.bantaypetsa.app.core.designsystem.theme.PrimaryGreen
 import com.bantaypetsa.app.core.designsystem.theme.SoftWhite
 import com.bantaypetsa.app.core.util.SampleInventoryState
@@ -100,7 +100,6 @@ fun AddEditBatchScreen(
                             modifier = Modifier
                                 .padding(start = 12.dp)
                                 .size(40.dp)
-                                
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -142,7 +141,8 @@ fun AddEditBatchScreen(
                 label = { Text("Initial Quantity (${product?.unit ?: "units"}) *") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 isError = quantityError != null,
-                supportingText = quantityError?.let { { Text(it) } },
+                supportingText = quantityError?.let { { Text(it, color = ExpenseRed) } },
+                colors = bantayTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -164,6 +164,7 @@ fun AddEditBatchScreen(
                 onValueChange = { lotNumber = it },
                 label = { Text("Lot Number / Batch Code (Optional)") },
                 placeholder = { Text("e.g. LOT-2026-A1") },
+                colors = bantayTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )

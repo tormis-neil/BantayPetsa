@@ -1,6 +1,5 @@
 ﻿package com.bantaypetsa.app.core.designsystem.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -38,13 +37,13 @@ private val DarkColorScheme = darkColorScheme(
     onSecondary = CharcoalGreen,
     secondaryContainer = Color(0xFF1E2D23),
     onSecondaryContainer = PaleGreen,
-    background = Color(0xFF0F1411),
-    onBackground = SoftWhite,
-    surface = Color(0xFF19211D),
-    onSurface = SoftWhite,
-    surfaceVariant = Color(0xFF222B26),
-    onSurfaceVariant = MutedGreen,
-    outline = Color(0xFF334038),
+    background = SoftWhite,
+    onBackground = CharcoalGreen,
+    surface = SurfaceWhite,
+    onSurface = CharcoalGreen,
+    surfaceVariant = PaleGreen,
+    onSurfaceVariant = CharcoalGreen.copy(alpha = 0.7f),
+    outline = BorderSubtle,
     error = ExpenseRed,
     onError = Color.White,
     errorContainer = ExpenseRedContainer,
@@ -53,7 +52,7 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun BantayPetsaTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme

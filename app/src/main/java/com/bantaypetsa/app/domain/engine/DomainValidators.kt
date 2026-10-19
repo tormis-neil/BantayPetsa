@@ -1,4 +1,4 @@
-package com.bantaypetsa.app.domain.engine
+﻿package com.bantaypetsa.app.domain.engine
 
 import java.time.LocalDate
 
@@ -57,6 +57,26 @@ object DomainValidators {
         return if (errors.isEmpty()) ValidationResult.Valid else ValidationResult.Invalid(errors)
     }
 
+    fun validatePhoneNumber(phone: String): ValidationResult {
+        val errors = mutableListOf<String>()
+
+        if (phone.isBlank()) {
+            errors.add("Contact phone is required.")
+        } else if (phone.any { it.isLetter() }) {
+            errors.add("Contact phone must not contain letters.")
+        } else if (!phone.all { it.isDigit() }) {
+            errors.add("Contact phone must contain digits only.")
+        } else if (phone.length < 11) {
+            errors.add("Contact phone must be exactly 11 digits (e.g., 09171234567).")
+        } else if (phone.length > 11) {
+            errors.add("Contact phone cannot exceed 11 digits.")
+        } else if (!phone.startsWith("09")) {
+            errors.add("Contact phone must start with '09' (e.g., 09171234567).")
+        }
+
+        return if (errors.isEmpty()) ValidationResult.Valid else ValidationResult.Invalid(errors)
+    }
+
     fun validateUserProfile(
         storeName: String,
         ownerName: String,
@@ -73,9 +93,11 @@ object DomainValidators {
             errors.add("Invalid email address format.")
         }
 
-        val phoneClean = phone.replace(Regex("[\\s-()]"), "")
-        if (phone.isNotBlank() && phoneClean.length < 7) {
-            errors.add("Contact phone number is too short.")
+        if (phone.isNotBlank()) {
+            val phoneResult = validatePhoneNumber(phone)
+            if (phoneResult is ValidationResult.Invalid) {
+                errors.addAll(phoneResult.errors)
+            }
         }
 
         return if (errors.isEmpty()) ValidationResult.Valid else ValidationResult.Invalid(errors)

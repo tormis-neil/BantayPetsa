@@ -1,4 +1,4 @@
-package com.bantaypetsa.app.feature.products
+﻿package com.bantaypetsa.app.feature.products
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bantaypetsa.app.core.designsystem.component.EmptyStateView
+import com.bantaypetsa.app.core.designsystem.component.bantayTextFieldColors
 import com.bantaypetsa.app.core.designsystem.theme.BorderSubtle
 import com.bantaypetsa.app.core.designsystem.theme.CharcoalGreen
 import com.bantaypetsa.app.core.designsystem.theme.MutedGreen
@@ -118,59 +119,76 @@ fun ProductsScreen(
                 trailingIcon = {
                     if (uiState.searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Clear",
+                                tint = MutedGreen
+                            )
                         }
                     }
                 },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp)
+                colors = bantayTextFieldColors(),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
             )
 
-            // Filter chips
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(listOf("Active", "All", "Archived")) { filter ->
+            // Filter Chips
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val filters = listOf("Active", "All", "Archived")
+                items(filters) { filter ->
+                    val isSelected = uiState.selectedFilter == filter
                     FilterChip(
-                        selected = uiState.selectedFilter == filter,
+                        selected = isSelected,
                         onClick = { viewModel.onFilterChange(filter) },
                         label = {
                             Text(
-                                filter,
-                                fontWeight = if (uiState.selectedFilter == filter) FontWeight.Bold else FontWeight.Medium
+                                text = filter,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = PrimaryGreen,
-                            selectedLabelColor = Color.White
+                            selectedLabelColor = Color.White,
+                            containerColor = PaleGreen,
+                            labelColor = CharcoalGreen
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = if (isSelected) PrimaryGreen else BorderSubtle
                         ),
                         shape = RoundedCornerShape(10.dp)
                     )
                 }
             }
 
+            // Products List
             if (uiState.products.isEmpty()) {
                 EmptyStateView(
-                    title = if (uiState.searchQuery.isNotBlank()) "No Products Found" else "No Products Added Yet",
-                    message = if (uiState.searchQuery.isNotBlank()) "Try adjusting your search query." else "Tap the + button to add your first product.",
-                    actionLabel = if (uiState.searchQuery.isBlank()) "Add Product" else null,
-                    onActionClick = onAddProductClick
+                    title = "No Products Found",
+                    message = if (uiState.searchQuery.isNotEmpty()) {
+                        "No products match your search query."
+                    } else {
+                        "Tap the + button to add your first product."
+                    },
+                    modifier = Modifier.weight(1f)
                 )
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.weight(1f)
                 ) {
                     items(uiState.products, key = { it.productId }) { product ->
-                        val productBatches = remember(product.productId, uiState.batches) {
-                            SampleInventoryState.getProductBatchesFEFO(product.productId)
-                        }
-                        val totalQty = remember(product.productId, uiState.batches) {
-                            SampleInventoryState.getProductTotalQuantity(product.productId)
-                        }
+                        val productBatches = uiState.batches.filter { it.productId == product.productId }
+                        val totalStock = productBatches.sumOf { it.quantity }
 
                         ProductListItemCard(
                             product = product,
-                            totalQuantity = totalQty,
+                            totalStock = totalStock,
                             batchCount = productBatches.size,
                             onClick = { onProductClick(product.productId) }
                         )
@@ -184,16 +202,15 @@ fun ProductsScreen(
 @Composable
 fun ProductListItemCard(
     product: ProductItem,
-    totalQuantity: Double,
+    totalStock: Double,
     batchCount: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = modifier
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier
             .fillMaxWidth()
             .border(1.dp, BorderSubtle, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
@@ -201,41 +218,53 @@ fun ProductListItemCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = product.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = CharcoalGreen
+                    )
+                    if (product.isArchived) {
+                        Text(
+                            text = "ARCHIVED",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MutedGreen,
+                            modifier = Modifier
+                                .background(PaleGreen, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = product.category,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MutedGreen
                 )
-
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = CharcoalGreen
-                )
-
-                Text(
-                    text = "Total Stock: ${if (totalQuantity % 1.0 == 0.0) totalQuantity.toInt() else totalQuantity} ${product.unit}  |  $batchCount batch${if (batchCount != 1) "es" else ""}",
+                    text = "${if (totalStock % 1.0 == 0.0) totalStock.toInt() else totalStock} ${product.unit} on hand ($batchCount ${if (batchCount == 1) "batch" else "batches"})",
                     style = MaterialTheme.typography.bodySmall,
-                    color = CharcoalGreen.copy(alpha = 0.7f)
+                    fontWeight = FontWeight.SemiBold,
+                    color = PrimaryGreen
                 )
             }
 
             Icon(
                 imageVector = Icons.Default.ChevronRight,
-                contentDescription = "View details",
-                tint = MutedGreen
+                contentDescription = null,
+                tint = MutedGreen,
+                modifier = Modifier.size(20.dp)
             )
         }
     }

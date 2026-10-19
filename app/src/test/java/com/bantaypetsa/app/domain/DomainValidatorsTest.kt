@@ -1,4 +1,4 @@
-package com.bantaypetsa.app.domain
+﻿package com.bantaypetsa.app.domain
 
 import com.bantaypetsa.app.domain.engine.DomainValidators
 import org.junit.Assert.assertTrue
@@ -92,7 +92,7 @@ class DomainValidatorsTest {
             storeName = "Nena's Sari-Sari Store",
             ownerName = "Maria Santos",
             email = "nena@example.com",
-            phone = "+63 917 123 4567"
+            phone = "09171234567"
         )
         assertTrue(result is DomainValidators.ValidationResult.Valid)
     }
@@ -106,5 +106,35 @@ class DomainValidatorsTest {
             phone = "09171234567"
         )
         assertTrue(result is DomainValidators.ValidationResult.Invalid)
+    }
+
+    @Test
+    fun testPhoneWithLettersFails() {
+        val result = DomainValidators.validatePhoneNumber("0917abc4567")
+        assertTrue(result is DomainValidators.ValidationResult.Invalid)
+    }
+
+    @Test
+    fun testPhoneMoreThan11DigitsFails() {
+        val result = DomainValidators.validatePhoneNumber("0917123456789")
+        assertTrue(result is DomainValidators.ValidationResult.Invalid)
+    }
+
+    @Test
+    fun testPhoneLessThan11DigitsFails() {
+        val result = DomainValidators.validatePhoneNumber("09171234")
+        assertTrue(result is DomainValidators.ValidationResult.Invalid)
+    }
+
+    @Test
+    fun testPhoneNotStartingWith09Fails() {
+        val result = DomainValidators.validatePhoneNumber("08171234567")
+        assertTrue(result is DomainValidators.ValidationResult.Invalid)
+    }
+
+    @Test
+    fun testValid11DigitPhonePasses() {
+        val result = DomainValidators.validatePhoneNumber("09171234567")
+        assertTrue(result is DomainValidators.ValidationResult.Valid)
     }
 }
