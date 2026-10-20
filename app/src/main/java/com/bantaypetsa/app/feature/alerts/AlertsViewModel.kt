@@ -1,4 +1,4 @@
-package com.bantaypetsa.app.feature.alerts
+﻿package com.bantaypetsa.app.feature.alerts
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,7 +27,8 @@ class AlertsViewModel : ViewModel() {
         SampleInventoryState.products,
         _selectedFilter
     ) { batches, products, filter ->
-        val sorted = SampleInventoryState.getAllBatchesFEFO()
+        // Only active inventory with stock on shelf triggers expiry alerts
+        val sorted = SampleInventoryState.getAllBatchesFEFO().filter { it.quantity > 0.0 }
         val filtered = when (filter) {
             "Expired" -> sorted.filter { SampleInventoryState.calculateStatus(it.expirationDate) == ExpiryStatus.EXPIRED }
             "Urgent" -> sorted.filter { SampleInventoryState.calculateStatus(it.expirationDate) == ExpiryStatus.URGENT }

@@ -47,6 +47,8 @@ import com.bantaypetsa.app.core.designsystem.component.EmptyStateView
 import com.bantaypetsa.app.core.designsystem.component.bantayTextFieldColors
 import com.bantaypetsa.app.core.designsystem.theme.BorderSubtle
 import com.bantaypetsa.app.core.designsystem.theme.CharcoalGreen
+import com.bantaypetsa.app.core.designsystem.theme.ExpenseRed
+import com.bantaypetsa.app.core.designsystem.theme.ExpenseRedContainer
 import com.bantaypetsa.app.core.designsystem.theme.MutedGreen
 import com.bantaypetsa.app.core.designsystem.theme.PaleGreen
 import com.bantaypetsa.app.core.designsystem.theme.PrimaryGreen
@@ -185,11 +187,13 @@ fun ProductsScreen(
                     items(uiState.products, key = { it.productId }) { product ->
                         val productBatches = uiState.batches.filter { it.productId == product.productId }
                         val totalStock = productBatches.sumOf { it.quantity }
+                        val isOutOfStock = totalStock <= 0.0
 
                         ProductListItemCard(
                             product = product,
                             totalStock = totalStock,
                             batchCount = productBatches.size,
+                            isOutOfStock = isOutOfStock,
                             onClick = { onProductClick(product.productId) }
                         )
                     }
@@ -204,6 +208,7 @@ fun ProductListItemCard(
     product: ProductItem,
     totalStock: Double,
     batchCount: Int,
+    isOutOfStock: Boolean = false,
     onClick: () -> Unit
 ) {
     Card(
@@ -243,6 +248,16 @@ fun ProductListItemCard(
                                 .background(PaleGreen, RoundedCornerShape(4.dp))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         )
+                    } else if (isOutOfStock) {
+                        Text(
+                            text = "OUT OF STOCK",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = ExpenseRed,
+                            modifier = Modifier
+                                .background(ExpenseRedContainer, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -253,10 +268,10 @@ fun ProductListItemCard(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "${if (totalStock % 1.0 == 0.0) totalStock.toInt() else totalStock} ${product.unit} on hand ($batchCount ${if (batchCount == 1) "batch" else "batches"})",
+                    text = if (isOutOfStock) "Out of Stock (0 ${product.unit})" else "${if (totalStock % 1.0 == 0.0) totalStock.toInt() else totalStock} ${product.unit} on hand ($batchCount ${if (batchCount == 1) "batch" else "batches"})",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = PrimaryGreen
+                    color = if (isOutOfStock) ExpenseRed else PrimaryGreen
                 )
             }
 

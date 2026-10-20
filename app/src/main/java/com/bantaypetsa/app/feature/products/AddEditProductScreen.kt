@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -38,13 +39,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.bantaypetsa.app.core.designsystem.component.DatePickerField
 import com.bantaypetsa.app.core.designsystem.component.bantayTextFieldColors
 import com.bantaypetsa.app.core.designsystem.theme.BorderSubtle
 import com.bantaypetsa.app.core.designsystem.theme.CharcoalGreen
+import com.bantaypetsa.app.core.designsystem.theme.ExpenseRed
 import com.bantaypetsa.app.core.designsystem.theme.PrimaryGreen
 import com.bantaypetsa.app.core.designsystem.theme.SoftWhite
 import com.bantaypetsa.app.core.util.SampleInventoryState
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +71,13 @@ fun AddEditProductScreen(
     var nameError by remember { mutableStateOf<String?>(null) }
     var categoryError by remember { mutableStateOf<String?>(null) }
     var unitError by remember { mutableStateOf<String?>(null) }
+
+    // Initial batch fields (for new products)
+    var initialQuantityText by remember { mutableStateOf("") }
+    var initialExpirationDate by remember { mutableStateOf(LocalDate.now().plusMonths(3)) }
+    var initialDateReceived by remember { mutableStateOf(LocalDate.now()) }
+    var initialLotNumber by remember { mutableStateOf("") }
+    var initialQuantityError by remember { mutableStateOf<String?>(null) }
 
     val isEditing = existingProduct != null
 
@@ -129,7 +141,7 @@ fun AddEditProductScreen(
                 label = { Text("Product Name *") },
                 placeholder = { Text("e.g. Bear Brand Fortified Powdered Milk") },
                 isError = nameError != null,
-                supportingText = nameError?.let { { Text(it) } },
+                supportingText = nameError?.let { { Text(it, color = ExpenseRed) } },
                 colors = bantayTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -144,7 +156,7 @@ fun AddEditProductScreen(
                 label = { Text("Category *") },
                 placeholder = { Text("e.g. Dairy & Milk, Canned Goods, Snacks") },
                 isError = categoryError != null,
-                supportingText = categoryError?.let { { Text(it) } },
+                supportingText = categoryError?.let { { Text(it, color = ExpenseRed) } },
                 colors = bantayTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -159,7 +171,7 @@ fun AddEditProductScreen(
                 label = { Text("Unit of Measure *") },
                 placeholder = { Text("e.g. packs, cans, pcs, boxes") },
                 isError = unitError != null,
-                supportingText = unitError?.let { { Text(it) } },
+                supportingText = unitError?.let { { Text(it, color = ExpenseRed) } },
                 colors = bantayTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -170,12 +182,69 @@ fun AddEditProductScreen(
                 onValueChange = { description = it },
                 label = { Text("Description (Optional)") },
                 placeholder = { Text("e.g. 320g pouch pack") },
-                minLines = 3,
-                maxLines = 5,
+                minLines = 2,
+                maxLines = 4,
                 colors = bantayTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
+
+            // Direct initial batch entry for new products (eliminates extra step)
+            if (!isEditing) {
+                HorizontalDivider(thickness = 0.8.dp, color = BorderSubtle)
+
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "Initial Batch & Expiration (Optional)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = CharcoalGreen
+                    )
+                    Text(
+                        text = "Record initial stock and expiry date directly without opening the batch screen.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = CharcoalGreen.copy(alpha = 0.7f)
+                    )
+                }
+
+                OutlinedTextField(
+                    value = initialQuantityText,
+                    onValueChange = {
+                        initialQuantityText = it
+                        initialQuantityError = null
+                    },
+                    label = { Text("Initial Quantity ${if (unit.isNotBlank()) "($unit)" else ""}") },
+                    placeholder = { Text("e.g. 24") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    isError = initialQuantityError != null,
+                    supportingText = initialQuantityError?.let { { Text(it, color = ExpenseRed) } },
+                    colors = bantayTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                DatePickerField(
+                    label = "Expiration Date",
+                    selectedDate = initialExpirationDate,
+                    onDateSelected = { initialExpirationDate = it }
+                )
+
+                DatePickerField(
+                    label = "Date Received",
+                    selectedDate = initialDateReceived,
+                    onDateSelected = { initialDateReceived = it }
+                )
+
+                OutlinedTextField(
+                    value = initialLotNumber,
+                    onValueChange = { initialLotNumber = it },
+                    label = { Text("Lot Number / Batch Code (Optional)") },
+                    placeholder = { Text("e.g. LOT-2026-A1") },
+                    colors = bantayTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -209,6 +278,14 @@ fun AddEditProductScreen(
                             hasError = true
                         }
 
+                        val parsedInitialQty = initialQuantityText.toDoubleOrNull()
+                        if (!isEditing && initialQuantityText.isNotBlank()) {
+                            if (parsedInitialQty == null || parsedInitialQty <= 0.0) {
+                                initialQuantityError = "Please enter a valid quantity greater than 0"
+                                hasError = true
+                            }
+                        }
+
                         if (!hasError) {
                             if (isEditing) {
                                 SampleInventoryState.updateProduct(
@@ -219,12 +296,23 @@ fun AddEditProductScreen(
                                     description = description.trim()
                                 )
                             } else {
-                                SampleInventoryState.addProduct(
+                                val newProductId = SampleInventoryState.addProduct(
                                     name = name.trim(),
                                     category = category.trim(),
                                     unit = unit.trim(),
                                     description = description.trim()
                                 )
+
+                                // Automatically attach initial batch if quantity was specified
+                                if (parsedInitialQty != null && parsedInitialQty > 0.0) {
+                                    SampleInventoryState.addBatch(
+                                        productId = newProductId,
+                                        lotNumber = initialLotNumber.trim(),
+                                        quantity = parsedInitialQty,
+                                        expirationDate = initialExpirationDate,
+                                        dateReceived = initialDateReceived
+                                    )
+                                }
                             }
                             onNavigateBack()
                         }

@@ -56,6 +56,7 @@ import com.bantaypetsa.app.core.designsystem.theme.AmberApproaching
 import com.bantaypetsa.app.core.designsystem.theme.BorderSubtle
 import com.bantaypetsa.app.core.designsystem.theme.CharcoalGreen
 import com.bantaypetsa.app.core.designsystem.theme.ExpenseRed
+import com.bantaypetsa.app.core.designsystem.theme.ExpenseRedContainer
 import com.bantaypetsa.app.core.designsystem.theme.MutedGreen
 import com.bantaypetsa.app.core.designsystem.theme.OrangeAlert
 import com.bantaypetsa.app.core.designsystem.theme.PaleGreen
@@ -110,7 +111,8 @@ fun ProductDetailScreen(
     }
 
     val totalQuantity = productBatches.sumOf { it.quantity }
-    val nearestBatch = productBatches.minByOrNull { it.expirationDate }
+    val activeBatches = productBatches.filter { it.quantity > 0.0 }
+    val nearestBatch = activeBatches.minByOrNull { it.expirationDate }
 
     Scaffold(
         containerColor = SoftWhite,
@@ -210,6 +212,16 @@ fun ProductDetailScreen(
                                         .background(PaleGreen, RoundedCornerShape(6.dp))
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
+                            } else if (totalQuantity <= 0.0) {
+                                Text(
+                                    text = "OUT OF STOCK",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ExpenseRed,
+                                    modifier = Modifier
+                                        .background(ExpenseRedContainer, RoundedCornerShape(6.dp))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
                             }
                         }
 
@@ -238,7 +250,7 @@ fun ProductDetailScreen(
                                     text = "${if (totalQuantity % 1.0 == 0.0) totalQuantity.toInt() else totalQuantity} ${product.unit}",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = PrimaryGreen
+                                    color = if (totalQuantity <= 0.0) ExpenseRed else PrimaryGreen
                                 )
                             }
                             Text(
@@ -389,6 +401,8 @@ fun BatchItemCard(
     val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM dd, yyyy") }
 
     val daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), batch.expirationDate)
+    val isDepleted = batch.quantity <= 0.0
+
     val daysRemainingText = when {
         daysRemaining < 0 -> "${-daysRemaining} day(s) overdue (Expired)"
         daysRemaining == 0L -> "Expires today (0 days left)"
@@ -419,13 +433,25 @@ fun BatchItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ExpiryStatusBadge(status = status)
+                if (isDepleted) {
+                    Text(
+                        text = "OUT OF STOCK",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = ExpenseRed,
+                        modifier = Modifier
+                            .background(ExpenseRedContainer, RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                } else {
+                    ExpiryStatusBadge(status = status)
+                }
 
                 Text(
                     text = "${if (batch.quantity % 1.0 == 0.0) batch.quantity.toInt() else batch.quantity} $unit",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    color = CharcoalGreen
+                    color = if (isDepleted) ExpenseRed else CharcoalGreen
                 )
             }
 
@@ -454,7 +480,7 @@ fun BatchItemCard(
                 color = MutedGreen
             )
 
-            // Exact remaining days indicator below expiration and received date
+            // Exact remaining days or Out of Stock indicator
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -462,20 +488,20 @@ fun BatchItemCard(
                 Icon(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = null,
-                    tint = daysRemainingColor,
+                    tint = if (isDepleted) MutedGreen else daysRemainingColor,
                     modifier = Modifier.size(15.dp)
                 )
                 Text(
-                    text = "Remaining:",
+                    text = if (isDepleted) "Status:" else "Remaining:",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
                     color = CharcoalGreen.copy(alpha = 0.8f)
                 )
                 Text(
-                    text = daysRemainingText,
+                    text = if (isDepleted) "Out of Stock (0 $unit on hand)" else daysRemainingText,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
-                    color = daysRemainingColor
+                    color = if (isDepleted) ExpenseRed else daysRemainingColor
                 )
             }
 
