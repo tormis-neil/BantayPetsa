@@ -1,4 +1,4 @@
-package com.bantaypetsa.app.feature.alerts
+﻿package com.bantaypetsa.app.feature.alerts
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -41,15 +42,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bantaypetsa.app.core.designsystem.component.EmptyStateView
 import com.bantaypetsa.app.core.designsystem.component.ExpiryStatusBadge
+import com.bantaypetsa.app.core.designsystem.theme.AmberApproaching
 import com.bantaypetsa.app.core.designsystem.theme.BorderSubtle
 import com.bantaypetsa.app.core.designsystem.theme.CharcoalGreen
+import com.bantaypetsa.app.core.designsystem.theme.ExpenseRed
 import com.bantaypetsa.app.core.designsystem.theme.MutedGreen
+import com.bantaypetsa.app.core.designsystem.theme.OrangeAlert
 import com.bantaypetsa.app.core.designsystem.theme.PrimaryGreen
 import com.bantaypetsa.app.core.designsystem.theme.SoftWhite
+import com.bantaypetsa.app.core.designsystem.theme.SuccessGreen
 import com.bantaypetsa.app.core.designsystem.theme.SurfaceWhite
 import com.bantaypetsa.app.core.util.SampleInventoryState
 import com.bantaypetsa.app.domain.model.BatchItem
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun AlertsScreen(
@@ -146,6 +153,20 @@ fun AlertBatchCard(
     val status = SampleInventoryState.calculateStatus(batch.expirationDate)
     val formatter = remember { DateTimeFormatter.ofPattern("MMM dd, yyyy") }
 
+    val daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), batch.expirationDate)
+    val daysRemainingText = when {
+        daysRemaining < 0 -> "${-daysRemaining} day(s) overdue (Expired)"
+        daysRemaining == 0L -> "Expires today (0 days left)"
+        daysRemaining == 1L -> "1 day left before expiration"
+        else -> "$daysRemaining days left before expiration"
+    }
+    val daysRemainingColor = when {
+        daysRemaining < 0 -> ExpenseRed
+        daysRemaining <= 7 -> OrangeAlert
+        daysRemaining <= 30 -> AmberApproaching
+        else -> SuccessGreen
+    }
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
@@ -198,6 +219,31 @@ fun AlertBatchCard(
                     text = "Lot Number: ${batch.lotNumber}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MutedGreen
+                )
+            }
+
+            // Exact remaining days countdown below expiration & lot number
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = null,
+                    tint = daysRemainingColor,
+                    modifier = Modifier.size(15.dp)
+                )
+                Text(
+                    text = "Remaining:",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = CharcoalGreen.copy(alpha = 0.8f)
+                )
+                Text(
+                    text = daysRemainingText,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = daysRemainingColor
                 )
             }
 

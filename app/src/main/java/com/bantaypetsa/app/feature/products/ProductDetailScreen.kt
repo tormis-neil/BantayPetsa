@@ -3,6 +3,7 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,24 +45,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bantaypetsa.app.core.designsystem.component.ConfirmationDialog
 import com.bantaypetsa.app.core.designsystem.component.EmptyStateView
 import com.bantaypetsa.app.core.designsystem.component.ExpiryStatusBadge
+import com.bantaypetsa.app.core.designsystem.theme.AmberApproaching
 import com.bantaypetsa.app.core.designsystem.theme.BorderSubtle
 import com.bantaypetsa.app.core.designsystem.theme.CharcoalGreen
 import com.bantaypetsa.app.core.designsystem.theme.ExpenseRed
 import com.bantaypetsa.app.core.designsystem.theme.MutedGreen
+import com.bantaypetsa.app.core.designsystem.theme.OrangeAlert
 import com.bantaypetsa.app.core.designsystem.theme.PaleGreen
 import com.bantaypetsa.app.core.designsystem.theme.PrimaryGreen
 import com.bantaypetsa.app.core.designsystem.theme.SoftWhite
+import com.bantaypetsa.app.core.designsystem.theme.SuccessGreen
 import com.bantaypetsa.app.core.designsystem.theme.SurfaceWhite
 import com.bantaypetsa.app.core.util.SampleInventoryState
+import com.bantaypetsa.app.domain.engine.FefoEngine
 import com.bantaypetsa.app.domain.model.BatchItem
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,57 +82,35 @@ fun ProductDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val products by SampleInventoryState.products.collectAsState()
-    val product = remember(productId, products) { products.find { it.productId == productId } }
+    val allBatches by SampleInventoryState.batches.collectAsState()
 
-    val batches by SampleInventoryState.batches.collectAsState()
-    val productBatches = remember(productId, batches) {
-        SampleInventoryState.getProductBatchesFEFO(productId)
-    }
-    val totalQuantity = remember(productId, batches) {
-        SampleInventoryState.getProductTotalQuantity(productId)
+    val product = products.find { it.productId == productId }
+    val productBatches = remember(productId, allBatches) {
+        FefoEngine.sortBatches(allBatches.filter { it.productId == productId })
     }
 
     var showArchiveDialog by remember { mutableStateOf(false) }
 
     if (product == null) {
-        Scaffold(
-            containerColor = SoftWhite,
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = "Product Details",
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(
-                            onClick = onNavigateBack,
-                            modifier = Modifier
-                                .padding(start = 12.dp)
-                                .size(40.dp)
-                                
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = PrimaryGreen
-                            )
-                        }
-                    }
-                )
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(SoftWhite)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Product not found.", color = ExpenseRed)
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedButton(onClick = onNavigateBack) {
+                Text("Back to Products", color = CharcoalGreen)
             }
-        ) { padding ->
-            EmptyStateView(
-                title = "Product Not Found",
-                message = "This product may have been deleted or does not exist.",
-                actionLabel = "Back to Products",
-                onActionClick = onNavigateBack,
-                modifier = Modifier.padding(padding)
-            )
         }
         return
     }
+
+    val totalQuantity = productBatches.sumOf { it.quantity }
+    val nearestBatch = productBatches.minByOrNull { it.expirationDate }
 
     Scaffold(
         containerColor = SoftWhite,
@@ -135,9 +120,9 @@ fun ProductDetailScreen(
                     title = {
                         Text(
                             text = product.name,
-                            maxLines = 1,
                             fontWeight = FontWeight.Bold,
                             color = CharcoalGreen,
+                            maxLines = 1,
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     },
@@ -147,7 +132,6 @@ fun ProductDetailScreen(
                             modifier = Modifier
                                 .padding(start = 12.dp)
                                 .size(40.dp)
-                                
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -157,35 +141,15 @@ fun ProductDetailScreen(
                         }
                     },
                     actions = {
-                        Row(
-                            modifier = Modifier.padding(end = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = { onEditProduct(product.productId) },
-                                modifier = Modifier
-                                    .size(40.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit Product",
-                                    tint = PrimaryGreen,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            IconButton(
-                                onClick = { showArchiveDialog = true },
-                                modifier = Modifier
-                                    .size(40.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (product.isArchived) Icons.Default.Unarchive else Icons.Default.Archive,
-                                    contentDescription = if (product.isArchived) "Restore" else "Archive",
-                                    tint = PrimaryGreen,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                        IconButton(onClick = { onEditProduct(product.productId) }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit Product", tint = PrimaryGreen)
+                        }
+                        IconButton(onClick = { showArchiveDialog = true }) {
+                            Icon(
+                                imageVector = if (product.isArchived) Icons.Default.Unarchive else Icons.Default.Archive,
+                                contentDescription = if (product.isArchived) "Restore Product" else "Archive Product",
+                                tint = if (product.isArchived) PrimaryGreen else ExpenseRed
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -209,13 +173,13 @@ fun ProductDetailScreen(
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(1.dp, BorderSubtle, RoundedCornerShape(20.dp))
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(
@@ -223,31 +187,31 @@ fun ProductDetailScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = product.category,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MutedGreen
-                            )
+                            Column {
+                                Text(
+                                    text = product.category,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MutedGreen
+                                )
+                                Text(
+                                    text = product.name,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CharcoalGreen
+                                )
+                            }
                             if (product.isArchived) {
                                 Text(
-                                    text = "Archived",
+                                    text = "ARCHIVED",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = ExpenseRed,
                                     modifier = Modifier
-                                        .background(ExpenseRed.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                        .background(PaleGreen, RoundedCornerShape(6.dp))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
                             }
                         }
-
-                        Text(
-                            text = product.name,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = CharcoalGreen
-                        )
 
                         if (product.description.isNotBlank()) {
                             Text(
@@ -257,7 +221,7 @@ fun ProductDetailScreen(
                             )
                         }
 
-                        HorizontalDivider(thickness = 0.8.dp, color = BorderSubtle)
+                        HorizontalDivider(thickness = 0.5.dp, color = BorderSubtle)
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -266,8 +230,8 @@ fun ProductDetailScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = "Total Available Quantity",
-                                    style = MaterialTheme.typography.labelSmall,
+                                    text = "Total On-Hand Stock",
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = CharcoalGreen.copy(alpha = 0.7f)
                                 )
                                 Text(
@@ -283,6 +247,56 @@ fun ProductDetailScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 color = CharcoalGreen
                             )
+                        }
+
+                        // Product-level Earliest Expiry Countdown
+                        if (nearestBatch != null) {
+                            val daysToNearest = ChronoUnit.DAYS.between(LocalDate.now(), nearestBatch.expirationDate)
+                            val nearestDaysText = when {
+                                daysToNearest < 0 -> "${-daysToNearest} day(s) overdue (Expired)"
+                                daysToNearest == 0L -> "Expires today (0 days left)"
+                                daysToNearest == 1L -> "1 day left before expiration"
+                                else -> "$daysToNearest days left before expiration"
+                            }
+                            val nearestColor = when {
+                                daysToNearest < 0 -> ExpenseRed
+                                daysToNearest <= 7 -> OrangeAlert
+                                daysToNearest <= 30 -> AmberApproaching
+                                else -> SuccessGreen
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(PaleGreen.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Schedule,
+                                        contentDescription = null,
+                                        tint = nearestColor,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "Earliest Expiry:",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium,
+                                        color = CharcoalGreen
+                                    )
+                                }
+                                Text(
+                                    text = nearestDaysText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = nearestColor
+                                )
+                            }
                         }
                     }
                 }
@@ -374,6 +388,20 @@ fun BatchItemCard(
     val status = SampleInventoryState.calculateStatus(batch.expirationDate)
     val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM dd, yyyy") }
 
+    val daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), batch.expirationDate)
+    val daysRemainingText = when {
+        daysRemaining < 0 -> "${-daysRemaining} day(s) overdue (Expired)"
+        daysRemaining == 0L -> "Expires today (0 days left)"
+        daysRemaining == 1L -> "1 day left before expiration"
+        else -> "$daysRemaining days left before expiration"
+    }
+    val daysRemainingColor = when {
+        daysRemaining < 0 -> ExpenseRed
+        daysRemaining <= 7 -> OrangeAlert
+        daysRemaining <= 30 -> AmberApproaching
+        else -> SuccessGreen
+    }
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
@@ -426,6 +454,31 @@ fun BatchItemCard(
                 color = MutedGreen
             )
 
+            // Exact remaining days indicator below expiration and received date
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = null,
+                    tint = daysRemainingColor,
+                    modifier = Modifier.size(15.dp)
+                )
+                Text(
+                    text = "Remaining:",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = CharcoalGreen.copy(alpha = 0.8f)
+                )
+                Text(
+                    text = daysRemainingText,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = daysRemainingColor
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
@@ -451,7 +504,7 @@ fun BatchItemCard(
                 ) {
                     Icon(Icons.Default.History, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.size(4.dp))
-                    Text("Stock Action", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text("Record Stock Action", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
             }
         }

@@ -63,6 +63,8 @@ import com.bantaypetsa.app.core.designsystem.theme.SoftWhite
 import com.bantaypetsa.app.core.designsystem.theme.SuccessGreen
 import com.bantaypetsa.app.core.util.SampleInventoryState
 import com.bantaypetsa.app.domain.model.StockActionType
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,7 +118,7 @@ fun RecordStockActionScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "Record Stock Movement",
+                            text = "Record Stock Action",
                             fontWeight = FontWeight.Bold,
                             color = CharcoalGreen,
                             modifier = Modifier.padding(start = 8.dp)
@@ -170,14 +172,22 @@ fun RecordStockActionScreen(
                         color = CharcoalGreen
                     )
                     Text(
-                        text = "Current Stock: ${if (batch.quantity % 1.0 == 0.0) batch.quantity.toInt() else batch.quantity} ${product.unit}  â€¢  Lot: ${batch.lotNumber.ifBlank { "N/A" }}",
+                        text = "Current Stock: ${if (batch.quantity % 1.0 == 0.0) batch.quantity.toInt() else batch.quantity} ${product.unit}  \u2022  Lot: ${batch.lotNumber.ifBlank { "N/A" }}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = CharcoalGreen.copy(alpha = 0.8f)
                     )
+                    val daysLeft = ChronoUnit.DAYS.between(LocalDate.now(), batch.expirationDate)
+                    val daysText = when {
+                        daysLeft < 0 -> "${-daysLeft} day(s) overdue (Expired)"
+                        daysLeft == 0L -> "Expires today (0 days left)"
+                        daysLeft == 1L -> "1 day left before expiration"
+                        else -> "$daysLeft days left before expiration"
+                    }
                     Text(
-                        text = "Expires: ${batch.expirationDate}",
+                        text = "Expires: ${batch.expirationDate} ($daysText)",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MutedGreen
+                        fontWeight = FontWeight.Medium,
+                        color = if (daysLeft < 0) ExpenseRed else if (daysLeft <= 7) PrimaryGreen else CharcoalGreen.copy(alpha = 0.8f)
                     )
                 }
             }
